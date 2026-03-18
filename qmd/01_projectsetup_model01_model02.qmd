@@ -73,16 +73,46 @@ summary(model_01_logistic)
 ```
 
 ```{r}
-#| label: test-predictions-and-brier
+#| label: test-and-brier-model-01-logistic
 
-test_predictions <- test_data %>%
+test_predictions_01 <- test_data %>%
   mutate(
     PredProb = predict(
       model_01_logistic,
       newdata = .,
       type = "response"))
 
-test_brier <- mean((test_predictions$PredProb - test_predictions$Outcome)^2)
+test_brier_01 <- mean((test_predictions_01$PredProb - test_predictions_01$Outcome)^2)
 
-test_brier
+test_brier_01
+```
+
+```{r}
+#| label: fit-model-02-efficiency
+
+source(here("R", "models", "fit_model_02_efficiency.R"))
+
+model_02_efficiency <- fit_model_02_efficiency(train_data)
+
+```
+
+```{r}
+#| label: summarize-model-02-efficiency
+
+summary(model_02_efficiency)
+```
+
+```{r}
+#| label: test-and-brier-model-02-efficiency
+
+test_predictions_02 <- test_data %>%
+  mutate(
+    PredProb = predict(
+      model_02_efficiency,
+      newdata = .,
+      type = "response"))
+
+test_brier_02 <- mean((test_predictions_02$PredProb - test_predictions_02$Outcome)^2)
+
+test_brier_02
 ```
