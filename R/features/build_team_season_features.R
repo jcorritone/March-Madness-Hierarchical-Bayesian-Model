@@ -8,9 +8,9 @@ build_team_season_features <- function(team_games) {
       OppPossessions = OppFGA - OppOR + OppTO + 0.44 * OppFTA,
       TeamAdjPossessions = TeamPossessions * (40 / (40 + 5 * NumOT)),
       OppAdjPossessions = OppPossessions * (40 / (40 + 5 * NumOT)),
-      OffEff = TeamScore / TeamPossessions,
-      DefEff = OppScore / OppPossessions,
-      NetEff = OffEff - DefEff)
+      OffEff = TeamScore / TeamAdjPossessions,
+      DefEff = OppScore / OppAdjPossessions,
+      NetEff = OffEff - DefEff
   
     team_season_features <- team_games %>%
     group_by(Season, TeamID) %>%
