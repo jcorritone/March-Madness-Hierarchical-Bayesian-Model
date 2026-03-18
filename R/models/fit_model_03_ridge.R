@@ -14,7 +14,7 @@ fit_model_03_ridge <- function(train_data_ridge) {
     drop_na()
 
   glm(
-    Outcome ~ SeedDiff + RidgeRatingDiff,
+    Outcome ~ SeedDiff + OffEffDiff + DefEffDiff + RidgeRatingDiff + AdjTempoDiff + SOSDiff,
     data = model_data,
     family = binomial(link = "logit"))
 }
