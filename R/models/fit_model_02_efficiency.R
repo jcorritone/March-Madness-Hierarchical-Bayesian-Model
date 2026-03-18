@@ -11,8 +11,8 @@ fit_model_02_efficiency <- function(train_data) {
     drop_na()
 
   glm(
-    Outcome ~ SeedDiff + I(SeedDiff^2) + OffEffDiff + I(OffEffDiff^2) + DefEffDiff +
-    OffEffDiff:DefEffDiff + SOSDiff + I(SOSDiff^2),
+    Outcome ~ SeedDiff + OffEffDiff + DefEffDiff +
+    OffEffDiff:DefEffDiff + SOSDiff,
     data = model_data,
     family = binomial(link = "logit")
   )
