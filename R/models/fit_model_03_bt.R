@@ -14,7 +14,7 @@ fit_model_03_bt <- function(train_data_bt) {
     drop_na()
 
   glm(
-    Outcome ~ SeedDiff + BTRatingDiff + AvgPointDiffDiff,
+    Outcome ~ SeedDiff + BTRatingDiff,
     data = model_data,
     family = binomial(link = "logit"))
 }
