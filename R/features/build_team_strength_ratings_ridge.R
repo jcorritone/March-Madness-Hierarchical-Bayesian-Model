@@ -34,8 +34,7 @@ build_team_strength_ratings_ridge <- function(team_games) {
         ),
         x = c(rep(1, n_games), rep(-1, n_games)),
         dims = c(n_games, n_teams),
-        dimnames = list(NULL, paste0("Team_", teams))
-      )
+        dimnames = list(NULL, paste0("Team_", teams)))
 
       X <- cbind(X_team, HomeCourt = home_court)
 
@@ -45,25 +44,26 @@ build_team_strength_ratings_ridge <- function(team_games) {
         alpha = 0,
         family = "gaussian",
         intercept = TRUE,
-        standardize = FALSE
-      )
+        standardize = FALSE)
 
-      coef_df <- as.matrix(coef(cv_fit, s = "lambda.min")) %>%
-        as.data.frame() %>%
-        tibble::rownames_to_column("Term") %>%
-        rename(Estimate = `1`)
+      coef_mat <- as.matrix(coef(cv_fit, s = "lambda.min"))
+      coef_df <- tibble(
+        Term = rownames(coef_mat),
+        Estimate = as.numeric(coef_mat[, 1]))
 
       coef_df %>%
         filter(str_detect(Term, "^Team_")) %>%
+        
         mutate(
           TeamID = as.integer(str_remove(Term, "^Team_")),
-          RidgeRating = Estimate
-        ) %>%
+          RidgeRating = Estimate) %>%
+      
         select(TeamID, RidgeRating) %>%
+      
         mutate(
           RidgeRating = RidgeRating - mean(RidgeRating),
-          Season = season
-        ) %>%
+          Season = season) %>%
+      
         select(Season, TeamID, RidgeRating)
     })
 
