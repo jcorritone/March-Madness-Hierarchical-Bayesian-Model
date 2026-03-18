@@ -1,5 +1,5 @@
 ---
-title: "Project Setup and Base Model"
+title: "Project Setup and Model Development"
 format: html
 ---
 
@@ -14,7 +14,7 @@ library(brms)
 ```
 
 ```{r}
-#| label: import-data
+#| label: load-data
 
 source(here("R", "data", "load_data.R"))
 data <- load_data()
@@ -35,13 +35,29 @@ team_season_features <- build_team_season_features(team_games)
 ```
 
 ```{r}
+#| label: build-team-season-features-adjusted
+
+source(here("R", "features", "build_team_season_features_adjusted.R"))
+team_season_features_adjusted <- build_team_season_features_adjusted(team_games)
+```
+
+```{r}
 #| label: build-matchup-training-data
 
 source(here("R", "features", "build_matchup_training_data.R"))
-
 matchup_training_data <- build_matchup_training_data(
   tourney_results = data$tourney_results,
   team_season_features = team_season_features,
+  seeds = data$seeds)
+```
+
+```{r}
+#| label: build-matchup-training-data-adjusted
+
+source(here("R", "features", "build_matchup_training_data_adjusted.R"))
+matchup_training_data_adjusted <- build_matchup_training_data_adjusted(
+  tourney_results = data$tourney_results,
+  team_season_features = team_season_features_adjusted,
   seeds = data$seeds)
 ```
 
@@ -53,66 +69,191 @@ train_data <- matchup_training_data %>%
 
 test_data <- matchup_training_data %>%
   filter(Season >= 2022)
-
-nrow(train_data)
-nrow(test_data)
 ```
 
 ```{r}
 #| label: fit-model-01-logistic
 
 source(here("R", "models", "fit_model_01_logistic.R"))
-
 model_01_logistic <- fit_model_01_logistic(train_data)
-```
-
-```{r}
-#| label: summarize-model-01-logistic
 
 summary(model_01_logistic)
 ```
 
 ```{r}
-#| label: test-and-brier-model-01-logistic
+#| label: source-rolling-brier-eval
 
-test_predictions_01 <- test_data %>%
-  mutate(
-    PredProb = predict(
-      model_01_logistic,
-      newdata = .,
-      type = "response"))
+source(here("R", "evaluation", "rolling_brier_eval.R"))
+```
 
-test_brier_01 <- mean((test_predictions_01$PredProb - test_predictions_01$Outcome)^2)
+```{r}
+#| label: rolling-brier-model-01
 
-test_brier_01
+rolling_brier_01 <- rolling_brier_eval(
+  data = matchup_training_data,
+  fit_function = fit_model_01_logistic,
+  test_seasons = c(2016:2019, 2021:2025))
+
+rolling_brier_01
+
+rolling_brier_01 %>%
+  summarise(
+    mean = mean(Brier),
+    median = median(Brier),
+    sd = sd(Brier),
+    min = min(Brier),
+    max = max(Brier))
 ```
 
 ```{r}
 #| label: fit-model-02-efficiency
 
 source(here("R", "models", "fit_model_02_efficiency.R"))
-
 model_02_efficiency <- fit_model_02_efficiency(train_data)
-
-```
-
-```{r}
-#| label: summarize-model-02-efficiency
 
 summary(model_02_efficiency)
 ```
 
 ```{r}
-#| label: test-and-brier-model-02-efficiency
+#| label: rolling-brier-model-02
 
-test_predictions_02 <- test_data %>%
+rolling_brier_02 <- rolling_brier_eval(
+  data = matchup_training_data,
+  fit_function = fit_model_02_efficiency,
+  test_seasons = c(2016:2019, 2021:2025))
+
+rolling_brier_02
+
+rolling_brier_02 %>%
+  summarise(
+    mean = mean(Brier),
+    median = median(Brier),
+    sd = sd(Brier),
+    min = min(Brier),
+    max = max(Brier))
+```
+
+```{r}
+#| label: train-test-split-adjusted
+ 
+train_data_adjusted <- matchup_training_data_adjusted %>%
+  filter(Season <= 2021)
+
+test_data_adjusted <- matchup_training_data_adjusted %>%
+  filter(Season >= 2022)
+```
+
+```{r}
+#| label: fit-model-02b-adj-efficiency
+
+source(here("R", "models", "fit_model_02b_adj_efficiency.R"))
+model_02b_adj_efficiency <- fit_model_02b_adj_efficiency(train_data_adjusted)
+
+summary(model_02b_adj_efficiency)
+```
+
+```{r}
+#| label: rolling-brier-model-02b
+
+rolling_brier_02b <- rolling_brier_eval(
+  data = matchup_training_data_adjusted,
+  fit_function = fit_model_02b_adj_efficiency,
+  test_seasons = c(2016:2019, 2021:2025))
+
+rolling_brier_02b
+
+rolling_brier_02b %>%
+  summarise(
+    mean = mean(Brier),
+    median = median(Brier),
+    sd = sd(Brier),
+    min = min(Brier),
+    max = max(Brier))
+```
+
+```{r}
+#| label: rolling-brier-comparison
+
+rolling_brier_comparison <- bind_rows(
+  rolling_brier_01 %>% 
+    mutate(Model = "Model 1"),
+  rolling_brier_02 %>% 
+    mutate(Model = "Model 2"),
+  rolling_brier_02b %>% 
+    mutate(Model = "Model 2B")) %>%
+  group_by(Model) %>%
+  summarise(
+    mean = mean(Brier),
+    median = median(Brier),
+    sd = sd(Brier),
+    .groups = "drop")
+
+rolling_brier_comparison
+```
+
+```{r}
+#| label: build-team-rankings-2026
+
+team_rankings_2026 <- team_season_features_adjusted %>%
+  filter(Season == 2026) %>%
+  left_join(data$teams, by = "TeamID") %>%
+  arrange(desc(AdjNetEff)) %>%
+  mutate(Rank = row_number()) %>%
+  select(
+    Rank,
+    TeamID,
+    TeamName,
+    AdjNetEff,
+    AdjOffEff,
+    AdjDefEff,
+    AdjSOS,
+    GamesPlayed)
+
+team_rankings_2026
+```
+
+```{r}
+#| label: fill-csv
+
+csv <- read_csv(here("data", "raw", "2026_Potential_Matchups.csv"))
+
+team_strength_2026 <- team_season_features_adjusted %>%
+  filter(Season == 2026) %>%
+  select(TeamID, AdjNetEff)
+
+filled_csv <- csv %>%
+  left_join(
+    team_strength_2026 %>%
+      rename(
+        HigherSeedID = TeamID,
+        HigherSeed_AdjNetEff = AdjNetEff),
+    by = "HigherSeedID") %>%
+  left_join(
+    team_strength_2026 %>%
+      rename(
+        LowerSeedID = TeamID,
+        LowerSeed_AdjNetEff = AdjNetEff),
+    by = "LowerSeedID") %>%
   mutate(
-    PredProb = predict(
-      model_02_efficiency,
-      newdata = .,
-      type = "response"))
+    AdjNetEffDiff = HigherSeed_AdjNetEff - LowerSeed_AdjNetEff,
+    Predictions = predict(
+      model_02b_adj_efficiency,
+      newdata = tibble(AdjNetEffDiff = AdjNetEffDiff),
+      type = "response")) %>%
+  select(
+    HigherSeed,
+    HigherSeedID,
+    HigherSeedNum,
+    LowerSeed,
+    LowerSeedID,
+    LowerSeedNum,
+    Predictions)
 
-test_brier_02 <- mean((test_predictions_02$PredProb - test_predictions_02$Outcome)^2)
+filled_csv
+```
 
-test_brier_02
+```{r}
+#| label: export-submission-csv
+
+write_csv(filled_csv, here("data", "processed", "joseph-corritone-mm2026-analytics-competition.csv"))
 ```
