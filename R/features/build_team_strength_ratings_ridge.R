@@ -22,16 +22,15 @@ build_team_strength_ratings_ridge <- function(team_games) {
           HomeCourt = case_when(
             Location == "H" ~ 1,
             Location == "A" ~ -1,
-            TRUE ~ 0)
-        ) %>%
+            TRUE ~ 0)) %>%
+        
         pull(HomeCourt)
 
       X_team <- Matrix::sparseMatrix(
         i = c(seq_len(n_games), seq_len(n_games)),
         j = c(
           team_index[as.character(season_df$TeamID)],
-          team_index[as.character(season_df$OpponentID)]
-        ),
+          team_index[as.character(season_df$OpponentID)]),
         x = c(rep(1, n_games), rep(-1, n_games)),
         dims = c(n_games, n_teams),
         dimnames = list(NULL, paste0("Team_", teams)))
