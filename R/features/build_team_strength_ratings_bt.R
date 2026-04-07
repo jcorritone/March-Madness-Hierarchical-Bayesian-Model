@@ -16,9 +16,7 @@ build_team_strength_ratings_bt <- function(reg_season_results) {
           at.home = case_when(
             WLoc == "H" ~ 1,
             WLoc == "A" ~ 0,
-            TRUE ~ 0
-          )
-        )
+            TRUE ~ 0))
 
       player2 <- season_df %>%
         transmute(
@@ -26,9 +24,7 @@ build_team_strength_ratings_bt <- function(reg_season_results) {
           at.home = case_when(
             WLoc == "H" ~ 0,
             WLoc == "A" ~ 1,
-            TRUE ~ 0
-          )
-        )
+            TRUE ~ 0))
 
       fit <- BradleyTerry2::BTm(
         outcome = cbind(rep(1, nrow(season_df)), rep(0, nrow(season_df))),
@@ -42,14 +38,14 @@ build_team_strength_ratings_bt <- function(reg_season_results) {
         as.data.frame() %>%
         rownames_to_column("TeamID") %>%
         as_tibble() %>%
+        
         transmute(
           Season = season,
           TeamID = as.integer(TeamID),
-          BTRating = ability
-        ) %>%
+          BTRating = ability) %>%
+        
         mutate(
-          BTRating = BTRating - mean(BTRating, na.rm = TRUE)
-        )
+          BTRating = BTRating - mean(BTRating, na.rm = TRUE))
     })
 
   return(bt_ratings)
