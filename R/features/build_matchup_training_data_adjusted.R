@@ -8,8 +8,7 @@ build_matchup_training_data_adjusted <- function(tourney_results, team_season_fe
       Season,
       Team1 = pmin(WTeamID, LTeamID),
       Team2 = pmax(WTeamID, LTeamID),
-      Outcome = if_else(WTeamID < LTeamID, 1, 0)
-    )
+      Outcome = if_else(WTeamID < LTeamID, 1, 0))
 
   team1_features <- team_season_features %>%
     rename_with(~ paste0("Team1_", .x), .cols = -Season)
@@ -26,22 +25,21 @@ build_matchup_training_data_adjusted <- function(tourney_results, team_season_fe
     rename(
       Team1 = TeamID,
       Team1_Seed = Seed,
-      Team1_SeedNum = SeedNum
-    )
+      Team1_SeedNum = SeedNum)
 
   team2_seeds <- seeds_clean %>%
     rename(
       Team2 = TeamID,
       Team2_Seed = Seed,
-      Team2_SeedNum = SeedNum
-    )
+      Team2_SeedNum = SeedNum)
 
   matchup_training_data <- matchup_base %>%
     left_join(team1_features, by = c("Season", "Team1" = "Team1_TeamID")) %>%
     left_join(team2_features, by = c("Season", "Team2" = "Team2_TeamID")) %>%
     left_join(team1_seeds, by = c("Season", "Team1")) %>%
     left_join(team2_seeds, by = c("Season", "Team2")) %>%
-    mutate(
+    
+  mutate(
       SeedDiff = Team1_SeedNum - Team2_SeedNum,
 
       AdjNetEffDiff = Team1_AdjNetEff - Team2_AdjNetEff,
@@ -56,21 +54,18 @@ build_matchup_training_data_adjusted <- function(tourney_results, team_season_fe
     team1_ridge <- team_strength_ratings_ridge %>%
       rename(
         Team1 = TeamID,
-        Team1_RidgeRating = RidgeRating
-      )
+        Team1_RidgeRating = RidgeRating)
 
     team2_ridge <- team_strength_ratings_ridge %>%
       rename(
         Team2 = TeamID,
-        Team2_RidgeRating = RidgeRating
-      )
+        Team2_RidgeRating = RidgeRating)
 
     matchup_training_data <- matchup_training_data %>%
       left_join(team1_ridge, by = c("Season", "Team1")) %>%
       left_join(team2_ridge, by = c("Season", "Team2")) %>%
       mutate(
-        RidgeRatingDiff = Team1_RidgeRating - Team2_RidgeRating
-      )
+        RidgeRatingDiff = Team1_RidgeRating - Team2_RidgeRating)
   }
 
   matchup_training_data %>%
