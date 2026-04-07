@@ -15,6 +15,7 @@ build_matchup_training_data_bt <- function(matchup_training_data, team_bt_rating
   matchup_training_data_bt <- matchup_training_data %>%
     left_join(team1_bt, by = c("Season", "Team1")) %>%
     left_join(team2_bt, by = c("Season", "Team2")) %>%
+    
     mutate(
       BTRatingDiff = Team1_BTRating - Team2_BTRating)
 
